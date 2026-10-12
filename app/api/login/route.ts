@@ -1,7 +1,8 @@
-import { getSession, loginOwner, loginPhotographer, logout } from "@/lib/auth";
+import { getClient, getSession, loginOwner, loginPhotographer, logout } from "@/lib/auth";
 
 export async function GET() {
-  return Response.json({ session: await getSession() });
+  const client = await getClient();
+  return Response.json({ session: await getSession(), client: client && { name: client.name } });
 }
 
 export async function POST(req: Request) {

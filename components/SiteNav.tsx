@@ -15,14 +15,17 @@ const LINKS = [
 export default function SiteNav() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
+  const [account, setAccount] = useState({ href: "/login", label: "دخول / حساب جديد" });
   useEffect(() => {
     fetch("/api/login")
       .then((r) => r.json())
-      .then((d) => setSignedIn(!!d.session))
+      .then((d) => {
+        if (d.session) setAccount({ href: "/admin", label: "لوحتي" });
+        else if (d.client) setAccount({ href: "/account", label: "حسابي" });
+        else setAccount({ href: "/login", label: "دخول / حساب جديد" });
+      })
       .catch(() => {});
-  }, []);
-  const account = signedIn ? { href: "/admin", label: "لوحتي" } : { href: "/admin", label: "دخول / حساب جديد" };
+  }, [path]);
 
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-gold/15 bg-ink/90 backdrop-blur-md">

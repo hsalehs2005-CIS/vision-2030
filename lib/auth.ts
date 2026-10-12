@@ -1,10 +1,13 @@
-// Two kinds of login: the studio owner (ADMIN_PASSWORD) and approved
-// photographers (email + password). The session is a signed cookie.
+// Staff login: the studio owner (ADMIN_PASSWORD) and approved photographers
+// (email + password). Clients who book have their own cookie, so a client
+// session can never reach the dashboard APIs. Both are signed cookies.
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { findClient, verifyClient } from "./clients";
 import { isApprovedPhotographer, photographerStatus, verifyPhotographer } from "./studio";
 
 const COOKIE = "studio_session";
+const CLIENT_COOKIE = "client_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 
 export type Session = { role: "owner" } | { role: "photographer"; id: string; name: string };
@@ -22,9 +25,9 @@ function sign(payload: string) {
   return createHmac("sha256", secret()).update(payload).digest("base64url");
 }
 
-async function setSession(session: Session) {
-  const payload = Buffer.from(JSON.stringify({ ...session, exp: Date.now() + MAX_AGE * 1000 })).toString("base64url");
-  (await cookies()).set(COOKIE, `${payload}.${sign(payload)}`, {
+async function writeCookie(name: string, data: object) {
+  const payload = Buffer.from(JSON.stringify({ ...data, exp: Date.now() + MAX_AGE * 1000 })).toString("base64url");
+  (await cookies()).set(name, `${payload}.${sign(payload)}`, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -33,9 +36,12 @@ async function setSession(session: Session) {
   });
 }
 
-// The signed cookie's contents, before checking the photographer is still approved.
-async function readCookie(): Promise<(Session & { exp: number }) | null> {
-  const value = (await cookies()).get(COOKIE)?.value;
+function setSession(session: Session) {
+  return writeCookie(COOKIE, session);
+}
+
+async function readSigned<T>(name: string): Promise<T | null> {
+  const value = (await cookies()).get(name)?.value;
   if (!value) return null;
   const [payload, sig] = value.split(".");
   const expected = sign(payload ?? "");
@@ -48,6 +54,11 @@ async function readCookie(): Promise<(Session & { exp: number }) | null> {
   } catch {
     return null;
   }
+}
+
+// The staff cookie's contents, before checking the photographer is still approved.
+function readCookie() {
+  return readSigned<Session & { exp: number }>(COOKIE);
 }
 
 export async function getSession(): Promise<Session | null> {
@@ -101,4 +112,25 @@ export async function logout() {
 export function canManageEvent(session: Session | null, event: { photographerId: string | null }) {
   if (!session) return false;
   return session.role === "owner" || event.photographerId === session.id;
+}
+
+// ---------- Clients ----------
+
+export async function getClient() {
+  const data = await readSigned<{ id: string }>(CLIENT_COOKIE);
+  return data ? findClient(data.id) : null;
+}
+
+export async function startClientSession(client: { id: string }) {
+  await writeCookie(CLIENT_COOKIE, { id: client.id });
+}
+
+export async function loginClient(phone: string, password: string) {
+  const client = await verifyClient(phone, password);
+  if (client) await startClientSession(client);
+  return !!client;
+}
+
+export async function logoutClient() {
+  (await cookies()).delete(CLIENT_COOKIE);
 }

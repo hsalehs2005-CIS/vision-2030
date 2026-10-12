@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 
 type Option = { id: string; name: string; price: number; unit: string };
@@ -6,16 +7,18 @@ type Option = { id: string; name: string; price: number; unit: string };
 const TIMES = ["09:00", "11:00", "13:00", "16:00", "18:00", "20:00"];
 
 export default function BookingForm({
+  client,
   packages,
   booked,
   initialPackage,
 }: {
+  client: { name: string; phone: string };
   packages: Option[];
   booked: string[];
   initialPackage: string;
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", packageId: initialPackage, date: "", time: "", notes: "" });
+  const [form, setForm] = useState({ packageId: initialPackage, date: "", time: "", notes: "" });
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState("");
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm({ ...form, [k]: e.target.value });
@@ -27,8 +30,9 @@ export default function BookingForm({
         <span className="text-5xl">✦</span>
         <h2 className="font-display text-2xl font-bold">تم استلام طلبك</h2>
         <p className="max-w-sm text-sm leading-7 text-muted">
-          شكراً {form.name}. سنتواصل معك على <span dir="ltr">{form.phone}</span> لتأكيد موعد {form.date}.
+          شكراً {client.name}. سنتواصل معك على <span dir="ltr">{client.phone}</span> لتأكيد موعد {form.date}.
         </p>
+        <Link href="/account" className="btn">تابع حجوزاتي</Link>
       </div>
     );
   }
@@ -47,18 +51,9 @@ export default function BookingForm({
         setState("idle");
       }}
     >
-      <label className="label">
-        الاسم الكامل *
-        <input className="input" value={form.name} onChange={set("name")} required />
-      </label>
-      <label className="label">
-        رقم الجوال *
-        <input className="input" type="tel" dir="ltr" placeholder="05XXXXXXXX" value={form.phone} onChange={set("phone")} required />
-      </label>
-      <label className="label sm:col-span-2">
-        البريد الإلكتروني
-        <input className="input" type="email" dir="ltr" value={form.email} onChange={set("email")} />
-      </label>
+      <p className="text-sm text-muted sm:col-span-2">
+        الحجز باسم <span className="text-cream">{client.name}</span> · <span dir="ltr">{client.phone}</span>
+      </p>
       <label className="label sm:col-span-2">
         الباقة
         <select className="input" value={form.packageId} onChange={set("packageId")}>

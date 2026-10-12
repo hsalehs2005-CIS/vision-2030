@@ -86,6 +86,16 @@ CREATE TABLE IF NOT EXISTS bookings (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS bookings_date_idx ON bookings(date);
+CREATE TABLE IF NOT EXISTS clients (
+  id text PRIMARY KEY,
+  name text NOT NULL,
+  phone text NOT NULL UNIQUE,
+  email text NOT NULL DEFAULT '',
+  password_hash text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_id text REFERENCES clients(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS bookings_client_idx ON bookings(client_id);
 `;
 
 // Starting packages; the owner edits them from the dashboard.

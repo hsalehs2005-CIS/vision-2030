@@ -138,6 +138,22 @@ export async function listBookings() {
   return rows.map(toBooking);
 }
 
+export async function listClientBookings(clientId: string) {
+  const rows = await q<BookingRow>("SELECT * FROM bookings WHERE client_id = $1 ORDER BY date DESC, created_at DESC", [
+    clientId,
+  ]);
+  return rows.map(toBooking);
+}
+
+// A client can withdraw a request the studio has not confirmed yet.
+export async function cancelClientBooking(clientId: string, id: string) {
+  const rows = await q("UPDATE bookings SET status = 'cancelled' WHERE id = $1 AND client_id = $2 AND status = 'pending' RETURNING id", [
+    id,
+    clientId,
+  ]);
+  return rows.length > 0;
+}
+
 // Days already taken by a confirmed booking (no client details, safe to show publicly).
 export async function bookedDates() {
   const rows = await q<{ date: Date }>(
@@ -154,12 +170,13 @@ export async function createBooking(input: {
   date: string;
   time: string;
   notes: string;
+  clientId: string;
 }) {
   const pkg = input.packageId ? await getPackage(input.packageId) : null;
   const id = nanoid(10);
   await q(
-    `INSERT INTO bookings (id, name, phone, email, package_id, package_name, price, date, time, notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    `INSERT INTO bookings (id, name, phone, email, package_id, package_name, price, date, time, notes, client_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       id,
       input.name,
@@ -171,6 +188,7 @@ export async function createBooking(input: {
       input.date,
       input.time,
       input.notes,
+      input.clientId,
     ],
   );
   return id;
@@ -232,12 +250,12 @@ export async function requestPhotographer(input: {
   return id;
 }
 
-async function hashPassword(pw: string) {
+export async function hashPassword(pw: string) {
   const salt = randomBytes(16).toString("hex");
   return `${salt}:${(await scrypt(pw, salt, 32)).toString("hex")}`;
 }
 
-async function checkPassword(pw: string, stored: string) {
+export async function checkPassword(pw: string, stored: string) {
   const [salt, hash] = stored.split(":");
   const actual = await scrypt(pw, salt, 32);
   const expected = Buffer.from(hash, "hex");
