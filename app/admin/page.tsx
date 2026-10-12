@@ -108,7 +108,18 @@ export default function AdminPage() {
 }
 
 function Login({ onDone }: { onDone: () => void }) {
-  const [mode, setMode] = useState<"owner" | "photographer">("owner");
+  const [mode, setModeState] = useState<"owner" | "photographer">("photographer");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("login-mode") === "owner") setModeState("owner");
+    } catch {}
+  }, []);
+  const setMode = (m: "owner" | "photographer") => {
+    setModeState(m);
+    try {
+      localStorage.setItem("login-mode", m);
+    } catch {}
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -129,7 +140,7 @@ function Login({ onDone }: { onDone: () => void }) {
         }}
       >
         <div className="grid grid-cols-2 gap-1 border border-line p-1">
-          {(["owner", "photographer"] as const).map((m) => (
+          {(["photographer", "owner"] as const).map((m) => (
             <button
               key={m}
               type="button"
@@ -148,7 +159,7 @@ function Login({ onDone }: { onDone: () => void }) {
         <button className="btn w-full">دخول</button>
         {mode === "photographer" && (
           <p className="text-center text-xs text-muted">
-            ليس لديك حساب؟ <Link href="/photographers" className="text-gold">اطلب الانضمام</Link>
+            ليس لديك حساب؟ <Link href="/photographers" className="text-gold">أنشئ حساب مصوّر</Link>
           </p>
         )}
       </form>

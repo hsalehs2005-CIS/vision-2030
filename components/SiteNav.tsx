@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { site } from "@/lib/site";
 
 const LINKS = [
@@ -15,6 +15,14 @@ const LINKS = [
 export default function SiteNav() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    fetch("/api/login")
+      .then((r) => r.json())
+      .then((d) => setSignedIn(!!d.session))
+      .catch(() => {});
+  }, []);
+  const account = signedIn ? { href: "/admin", label: "لوحتي" } : { href: "/admin", label: "دخول / حساب جديد" };
 
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-gold/15 bg-ink/90 backdrop-blur-md">
@@ -36,6 +44,9 @@ export default function SiteNav() {
           ))}
         </ul>
         <div className="flex items-center gap-3">
+          <Link href={account.href} className="hidden text-sm text-cream transition hover:text-gold md:block">
+            {account.label}
+          </Link>
           <Link href="/book" className="btn px-5 py-2.5" onClick={() => setOpen(false)}>
             احجز الآن
           </Link>
@@ -62,6 +73,11 @@ export default function SiteNav() {
               </Link>
             </li>
           ))}
+          <li>
+            <Link href={account.href} onClick={() => setOpen(false)} className="block py-3 text-gold">
+              {account.label}
+            </Link>
+          </li>
         </ul>
       )}
     </nav>

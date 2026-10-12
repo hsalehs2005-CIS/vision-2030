@@ -59,7 +59,7 @@ export default function PhotographerRequestForm({ initial }: { initial: { name: 
 
   return (
     <>
-      <h2 className="mb-6 font-display text-2xl font-bold">طلب الانضمام</h2>
+      <h2 className="mb-6 font-display text-2xl font-bold">إنشاء حساب مصوّر</h2>
       <form
         className="card grid gap-5 sm:grid-cols-2"
         onSubmit={async (e) => {
@@ -103,7 +103,7 @@ export default function PhotographerRequestForm({ initial }: { initial: { name: 
         </label>
         {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
         <button className="btn sm:col-span-2" disabled={sending}>
-          {sending ? "جاري الإرسال..." : "أرسل الطلب"}
+          {sending ? "جاري الإرسال..." : "إنشاء الحساب"}
         </button>
         <p className="text-center text-xs text-muted sm:col-span-2">
           عندك حساب؟ <Link href="/admin" className="text-gold">سجّل دخولك</Link>
