@@ -67,10 +67,10 @@ export default function EventAdmin() {
 
   return (
     <main className="mx-auto max-w-5xl space-y-6 px-4 py-10">
-      <Link href="/admin" className="text-sm text-stone-500">→ كل الحفلات</Link>
+      <Link href="/admin" className="text-sm text-muted">→ كل الحفلات</Link>
       <header>
-        <h1 className="text-3xl font-extrabold">{event.name}</h1>
-        <p className="text-stone-500">
+        <h1 className="font-display text-3xl font-bold">{event.name}</h1>
+        <p className="text-muted">
           {event.date} · {event.photos.length} صورة · {faces} وجه · تُحذف بعد {event.retentionDays} يوم
         </p>
       </header>
@@ -81,9 +81,9 @@ export default function EventAdmin() {
 
         <section className="card space-y-4">
           <h2 className="text-xl font-bold">رفع الصور يدوياً</h2>
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-300 p-10 text-center hover:border-amber-600">
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line p-10 text-center hover:border-gold">
             <span className="text-lg font-bold">اختر الصور أو اسحبها هنا</span>
-            <span className="text-sm text-stone-500">يتم اكتشاف الوجوه تلقائياً قبل الرفع</span>
+            <span className="text-sm text-muted">يتم اكتشاف الوجوه تلقائياً قبل الرفع</span>
             <input
               type="file"
               accept="image/*"
@@ -98,8 +98,8 @@ export default function EventAdmin() {
               <div className="mb-1 text-sm">
                 جاري المعالجة {progress.done} من {progress.total}
               </div>
-              <div className="h-2 overflow-hidden rounded bg-stone-200">
-                <div className="h-full bg-amber-600 transition-all" style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+              <div className="h-2 overflow-hidden rounded bg-line">
+                <div className="h-full bg-gold transition-all" style={{ width: `${(progress.done / progress.total) * 100}%` }} />
               </div>
             </div>
           )}
@@ -109,7 +109,7 @@ export default function EventAdmin() {
         <section className="card h-fit space-y-3 text-center">
           <h2 className="text-xl font-bold">باركود الضيوف</h2>
           {qr && <img src={qr} alt="باركود الحفلة" className="mx-auto w-full max-w-[220px]" />}
-          <a href={guestUrl} target="_blank" className="block break-all text-sm text-amber-700 underline" dir="ltr">
+          <a href={guestUrl} target="_blank" className="block break-all text-sm text-gold underline" dir="ltr">
             {guestUrl}
           </a>
           {qr && (
@@ -146,7 +146,7 @@ export default function EventAdmin() {
       </section>
 
       <button
-        className="text-sm text-red-600 underline"
+        className="text-sm text-red-400 underline"
         onClick={async () => {
           if (!confirm("حذف الحفلة وكل صورها وبيانات الوجوه نهائياً؟")) return;
           await fetch(`/api/events/${event.id}`, { method: "DELETE" });

@@ -1,5 +1,5 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
-import { isAdmin } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 
 // Issues short-lived tokens so the photographer's browser can upload straight to Vercel Blob.
 export async function POST(req: Request) {
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       body,
       request: req,
       onBeforeGenerateToken: async () => {
-        if (!(await isAdmin())) throw new Error("unauthorized");
+        if (!(await getSession())) throw new Error("unauthorized");
         return {
           allowedContentTypes: ["image/jpeg"],
           maximumSizeInBytes: 20 * 1024 * 1024,
