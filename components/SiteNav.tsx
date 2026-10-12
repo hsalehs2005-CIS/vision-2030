@@ -28,11 +28,11 @@ export default function SiteNav() {
   }, [path]);
 
   return (
-    <nav className="fixed inset-x-0 top-0 z-50 border-b border-gold/15 bg-ink/90 backdrop-blur-md">
+    <nav className="fixed inset-x-0 top-0 z-50 border-b border-stone-200 bg-white/90 backdrop-blur-md">
       <div className="flex items-center justify-between px-4 py-4 md:px-12">
         <Link href="/" className="leading-none" onClick={() => setOpen(false)}>
-          <span className="font-display text-2xl font-black tracking-widest text-gold">{site.name}</span>
-          <span className="block text-[0.65rem] font-light tracking-[4px] text-cream">{site.subtitle}</span>
+          <span className="text-2xl font-extrabold text-amber-700">{site.name}</span>
+          <span className="block text-xs text-stone-500">{site.tagline}</span>
         </Link>
         <ul className="hidden gap-10 md:flex">
           {LINKS.map((l) => (
@@ -54,7 +54,7 @@ export default function SiteNav() {
             احجز الآن
           </Link>
           <button
-            className="flex h-10 w-10 items-center justify-center border border-line text-cream md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-line text-cream md:hidden"
             aria-label="القائمة"
             aria-expanded={open}
             onClick={() => setOpen(!open)}

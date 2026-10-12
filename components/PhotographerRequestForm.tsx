@@ -101,7 +101,7 @@ export default function PhotographerRequestForm({ initial }: { initial: { name: 
           نبذة أو حساب انستقرام
           <textarea className="input min-h-24" value={form.message} onChange={set("message")} />
         </label>
-        {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
+        {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
         <button className="btn sm:col-span-2" disabled={sending}>
           {sending ? "جاري الإرسال..." : "إنشاء الحساب"}
         </button>

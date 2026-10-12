@@ -132,7 +132,7 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
           <div className="text-6xl">🤳</div>
           <h2 className="text-xl font-bold">التقط سيلفي</h2>
           <p className="text-muted">واجه الكاميرا في مكان مضاء، بدون نظارة شمسية.</p>
-          {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
+          {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600">{error}</p>}
           <label className="btn w-full cursor-pointer">
             فتح الكاميرا
             <input

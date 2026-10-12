@@ -23,13 +23,13 @@ export default function ClientAuth({ next, initialMode = "register" }: { next?: 
         setBusy(false);
       }}
     >
-      <div className="grid grid-cols-2 gap-1 border border-line p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-stone-100 p-1">
         {(["register", "login"] as const).map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
-            className={`py-2 text-sm ${mode === m ? "bg-gold font-bold text-ink" : "text-muted"}`}
+            className={`rounded-lg py-2 text-sm ${mode === m ? "bg-white font-bold text-amber-800 shadow-sm" : "text-muted"}`}
           >
             {m === "register" ? "حساب جديد" : "تسجيل الدخول"}
           </button>
@@ -55,7 +55,7 @@ export default function ClientAuth({ next, initialMode = "register" }: { next?: 
         كلمة السر
         <input className="input" type="password" minLength={mode === "register" ? 6 : undefined} value={form.password} onChange={set("password")} required />
       </label>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <button className="btn w-full" disabled={busy}>
         {mode === "register" ? "إنشاء الحساب" : "دخول"}
       </button>

@@ -78,12 +78,12 @@ export default function BookingForm({
           ))}
         </select>
       </label>
-      {dateTaken && <p className="text-sm text-red-400 sm:col-span-2">هذا اليوم محجوز، اختر يوماً آخر.</p>}
+      {dateTaken && <p className="text-sm text-red-600 sm:col-span-2">هذا اليوم محجوز، اختر يوماً آخر.</p>}
       <label className="label sm:col-span-2">
         ملاحظات
         <textarea className="input min-h-28" placeholder="نوع المناسبة، المكان، عدد الأشخاص..." value={form.notes} onChange={set("notes")} />
       </label>
-      {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
+      {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
       <button className="btn sm:col-span-2" disabled={state === "sending" || dateTaken}>
         {state === "sending" ? "جاري الإرسال..." : "أرسل طلب الحجز"}
       </button>

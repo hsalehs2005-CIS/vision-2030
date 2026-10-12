@@ -102,7 +102,7 @@ export default function LiveFolder({
       <div className="flex items-center gap-2">
         <h2 className="text-xl font-bold">الرفع المباشر من الكاميرا</h2>
         {dir && (
-          <span className="flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-400">
+          <span className="flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-bold text-red-600">
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" /> مباشر
           </span>
         )}

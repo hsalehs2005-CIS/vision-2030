@@ -20,7 +20,7 @@ export default function AccountBookings({ bookings }: { bookings: Booking[] }) {
             <span className={`border px-2 py-0.5 text-xs ${STATUS_CLASS[b.status]}`}>{STATUS_LABEL[b.status]}</span>
             {b.status === "pending" && (
               <button
-                className="text-xs text-muted hover:text-red-400"
+                className="text-xs text-muted hover:text-red-600"
                 onClick={async () => {
                   if (!confirm("إلغاء طلب الحجز؟")) return;
                   await fetch(`/api/account/bookings/${b.id}`, { method: "DELETE" });

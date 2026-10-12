@@ -41,7 +41,7 @@ export default function PhotographersTab() {
                   {p.eventCount} حفلة
                 </div>
               </div>
-              <span className={`border px-2 py-0.5 text-xs ${p.status === "approved" ? "border-gold/60 text-gold" : p.status === "pending" ? "border-amber-400/40 text-amber-300" : "border-line text-muted"}`}>
+              <span className={`border px-2 py-0.5 text-xs ${p.status === "approved" ? "border-gold/60 text-gold" : p.status === "pending" ? "border-amber-300 text-amber-800" : "border-line text-muted"}`}>
                 {STATUS[p.status]}
               </span>
             </div>
@@ -64,7 +64,7 @@ export default function PhotographersTab() {
               {p.status === "approved" && <button className="btn-ghost btn-sm" onClick={() => act(p.id, "reset")}>نسي كلمة السر</button>}
               {p.status !== "rejected" && <button className="btn-ghost btn-sm" onClick={() => act(p.id, "reject")}>{p.status === "approved" ? "إيقاف" : "رفض"}</button>}
               <button
-                className="btn-sm mr-auto text-xs text-muted hover:text-red-400"
+                className="btn-sm mr-auto text-xs text-muted hover:text-red-600"
                 onClick={async () => {
                   if (!confirm(`حذف ${p.name} مع كل حفلاته وصورها نهائياً؟`)) return;
                   await fetch(`/api/photographers/${p.id}`, { method: "DELETE" });

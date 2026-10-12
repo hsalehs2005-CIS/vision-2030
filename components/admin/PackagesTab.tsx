@@ -61,7 +61,7 @@ export default function PackagesTab() {
               <div className="flex gap-2">
                 <button className="btn-ghost btn-sm" onClick={() => setEditing(p)}>تعديل</button>
                 <button
-                  className="btn-sm text-xs text-muted hover:text-red-400"
+                  className="btn-sm text-xs text-muted hover:text-red-600"
                   onClick={async () => {
                     if (!confirm(`حذف باقة ${p.name}؟ الحجوزات السابقة تبقى محفوظة.`)) return;
                     await fetch(`/api/packages/${p.id}`, { method: "DELETE" });
@@ -140,7 +140,7 @@ function PackageForm({ initial, onDone }: { initial: Omit<Package, "id"> & { id?
           ظاهرة للعملاء
         </label>
       </div>
-      {error && <p className="text-sm text-red-400 sm:col-span-2">{error}</p>}
+      {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
       <div className="flex gap-2 sm:col-span-2">
         <button className="btn flex-1">حفظ</button>
         <button type="button" className="btn-ghost" onClick={onDone}>إلغاء</button>
