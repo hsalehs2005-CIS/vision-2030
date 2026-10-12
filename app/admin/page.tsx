@@ -1,129 +1,141 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import BookingsTab from "@/components/admin/BookingsTab";
+import CalendarTab from "@/components/admin/CalendarTab";
+import EventsTab from "@/components/admin/EventsTab";
+import PackagesTab from "@/components/admin/PackagesTab";
+import PhotographersTab from "@/components/admin/PhotographersTab";
+import { site } from "@/lib/site";
 
-type EventRow = { id: string; name: string; date: string; slug: string; photoCount: number };
+type Session = { role: "owner" } | { role: "photographer"; id: string; name: string };
+
+const OWNER_TABS = [
+  { key: "bookings", label: "الحجوزات" },
+  { key: "calendar", label: "جدول المواعيد" },
+  { key: "packages", label: "الباقات" },
+  { key: "events", label: "الحفلات" },
+  { key: "photographers", label: "المصورون" },
+] as const;
+type Tab = (typeof OWNER_TABS)[number]["key"];
 
 export default function AdminPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
-  const [events, setEvents] = useState<EventRow[]>([]);
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [tab, setTab] = useState<Tab>("bookings");
 
   async function load() {
-    const res = await fetch("/api/events");
-    if (res.status === 401) return setAuthed(false);
-    setAuthed(true);
-    setEvents(await res.json());
+    const res = await fetch("/api/login");
+    setSession((await res.json()).session);
   }
   useEffect(() => {
     load();
+    const saved = sessionStorage.getItem("admin-tab") as Tab | null;
+    if (saved) setTab(saved);
   }, []);
 
-  if (authed === null) return null;
-  if (!authed) return <Login onDone={load} />;
+  if (session === undefined) return null;
+  if (!session) return <Login onDone={load} />;
 
+  const owner = session.role === "owner";
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-4 py-10">
-      <header className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold">حفلاتي</h1>
-        <button
-          className="text-sm text-stone-500 underline"
-          onClick={async () => {
-            await fetch("/api/login", { method: "DELETE" });
-            setAuthed(false);
-          }}
-        >
-          خروج
-        </button>
+    <div className="min-h-screen">
+      <header className="border-b border-line bg-ink-2">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <Link href="/" className="font-display text-xl font-bold">
+            {site.name}
+            <span className="mr-2 text-xs font-normal text-gold">{owner ? "لوحة الاستوديو" : `مرحباً ${session.name}`}</span>
+          </Link>
+          <button
+            className="text-sm text-muted hover:text-gold"
+            onClick={async () => {
+              await fetch("/api/login", { method: "DELETE" });
+              setSession(null);
+            }}
+          >
+            خروج
+          </button>
+        </div>
+        {owner && (
+          <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4">
+            {OWNER_TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => {
+                  setTab(t.key);
+                  sessionStorage.setItem("admin-tab", t.key);
+                }}
+                className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm transition ${
+                  tab === t.key ? "border-gold text-gold" : "border-transparent text-muted hover:text-cream"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        )}
       </header>
-      <NewEvent onCreated={load} />
-      <ul className="space-y-3">
-        {events.map((e) => (
-          <li key={e.id}>
-            <Link href={`/admin/${e.id}`} className="card flex items-center justify-between hover:border-amber-600">
-              <div>
-                <div className="text-lg font-bold">{e.name}</div>
-                <div className="text-sm text-stone-500">{e.date}</div>
-              </div>
-              <div className="text-sm text-stone-500">{e.photoCount} صورة</div>
-            </Link>
-          </li>
-        ))}
-        {!events.length && <p className="text-stone-500">لا توجد حفلات بعد. أنشئ أول حفلة من الأعلى.</p>}
-      </ul>
-    </main>
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        {!owner || tab === "events" ? (
+          <EventsTab showOwner={owner} />
+        ) : tab === "bookings" ? (
+          <BookingsTab />
+        ) : tab === "calendar" ? (
+          <CalendarTab />
+        ) : tab === "packages" ? (
+          <PackagesTab />
+        ) : (
+          <PhotographersTab />
+        )}
+      </main>
+    </div>
   );
 }
 
 function Login({ onDone }: { onDone: () => void }) {
+  const [mode, setMode] = useState<"owner" | "photographer">("owner");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
+      <Link href="/" className="mb-8 text-center font-display text-3xl font-bold">
+        {site.name}
+      </Link>
       <form
         className="card space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
-          const res = await fetch("/api/login", { method: "POST", body: JSON.stringify({ password }) });
+          setError("");
+          const body = mode === "owner" ? { password } : { email, password };
+          const res = await fetch("/api/login", { method: "POST", body: JSON.stringify(body) });
           if (res.ok) onDone();
           else setError((await res.json()).error);
         }}
       >
-        <h1 className="text-2xl font-extrabold">دخول المصوّر</h1>
-        <input
-          className="input"
-          type="password"
-          placeholder="كلمة السر"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="grid grid-cols-2 gap-1 border border-line p-1">
+          {(["owner", "photographer"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`py-2 text-sm ${mode === m ? "bg-gold font-bold text-ink" : "text-muted"}`}
+            >
+              {m === "owner" ? "صاحب الاستوديو" : "مصوّر"}
+            </button>
+          ))}
+        </div>
+        {mode === "photographer" && (
+          <input className="input" type="email" dir="ltr" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        )}
+        <input className="input" type="password" placeholder="كلمة السر" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <button className="btn w-full">دخول</button>
+        {mode === "photographer" && (
+          <p className="text-center text-xs text-muted">
+            ليس لديك حساب؟ <Link href="/photographers" className="text-gold">اطلب الانضمام</Link>
+          </p>
+        )}
       </form>
     </main>
-  );
-}
-
-function NewEvent({ onCreated }: { onCreated: () => void }) {
-  const [name, setName] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [retentionDays, setRetention] = useState(30);
-  const [allowBrowseAll, setBrowseAll] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  return (
-    <form
-      className="card grid gap-3 sm:grid-cols-2"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        setBusy(true);
-        await fetch("/api/events", {
-          method: "POST",
-          body: JSON.stringify({ name, date, retentionDays, allowBrowseAll }),
-        });
-        setBusy(false);
-        setName("");
-        onCreated();
-      }}
-    >
-      <h2 className="text-xl font-bold sm:col-span-2">حفلة جديدة</h2>
-      <input className="input sm:col-span-2" placeholder="اسم الحفلة، مثلاً: زواج أحمد وسارة" value={name} onChange={(e) => setName(e.target.value)} required />
-      <label className="text-sm">
-        تاريخ الحفلة
-        <input className="input mt-1" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
-      <label className="text-sm">
-        حذف الصور وبيانات الوجوه بعد
-        <select className="input mt-1" value={retentionDays} onChange={(e) => setRetention(Number(e.target.value))}>
-          {[7, 30, 90, 180].map((d) => (
-            <option key={d} value={d}>{d} يوم</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-2 text-sm sm:col-span-2">
-        <input type="checkbox" checked={allowBrowseAll} onChange={(e) => setBrowseAll(e.target.checked)} />
-        السماح للضيوف بتصفح كل صور الحفلة بدون سيلفي
-      </label>
-      <button className="btn sm:col-span-2" disabled={busy}>إنشاء الحفلة</button>
-    </form>
   );
 }

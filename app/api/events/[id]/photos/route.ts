@@ -1,4 +1,4 @@
-import { isAdmin } from "@/lib/auth";
+import { managedEvent } from "@/lib/event-access";
 import { isBlobUrl, saveLocal } from "@/lib/files";
 import { newPhotoId, store } from "@/lib/store";
 
@@ -12,9 +12,9 @@ function validFaces(faces: unknown): faces is number[][] {
 // Two modes: JSON with Vercel Blob URLs (browser already uploaded the images),
 // or multipart with the image bytes for local development.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await isAdmin())) return Response.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  if (!(await store.getEvent(id))) return Response.json({ error: "not found" }, { status: 404 });
+  const { error } = await managedEvent(id);
+  if (error) return error;
 
   let photo;
   if (req.headers.get("content-type")?.includes("application/json")) {

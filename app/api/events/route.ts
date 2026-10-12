@@ -1,15 +1,17 @@
-import { isAdmin } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { purgeExpired } from "@/lib/events";
 import { store } from "@/lib/store";
 
 export async function GET() {
-  if (!(await isAdmin())) return Response.json({ error: "unauthorized" }, { status: 401 });
+  const session = await getSession();
+  if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
   await purgeExpired();
-  return Response.json(await store.listEvents());
+  return Response.json(await store.listEvents(session.role === "photographer" ? session.id : undefined));
 }
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) return Response.json({ error: "unauthorized" }, { status: 401 });
+  const session = await getSession();
+  if (!session) return Response.json({ error: "unauthorized" }, { status: 401 });
   const body = await req.json();
   const name = String(body.name ?? "").trim();
   if (!name) return Response.json({ error: "اسم الحفلة مطلوب" }, { status: 400 });
@@ -19,6 +21,7 @@ export async function POST(req: Request) {
     date,
     retentionDays: Math.min(365, Math.max(1, Number(body.retentionDays) || 30)),
     allowBrowseAll: Boolean(body.allowBrowseAll),
+    photographerId: session.role === "photographer" ? session.id : null,
   });
   return Response.json(event);
 }

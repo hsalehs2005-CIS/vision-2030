@@ -1,56 +1,8 @@
-// Production store: Postgres with the pgvector extension (e.g. Neon on Vercel).
-// Face descriptors are vectors, so matching is one indexed SQL query.
-import { Pool } from "pg";
+// Events, photos and face descriptors in Postgres with pgvector.
+// Face descriptors are vectors, so matching is one SQL query.
+import { ensureDb, pool, q } from "../db";
 import type { EventMeta, PhotoInfo, Store } from "./types";
 import { newEventIds } from "./ids";
-
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-
-const pool = new Pool({
-  connectionString,
-  max: 5,
-  ssl: /localhost|127\.0\.0\.1/.test(connectionString ?? "") ? false : { rejectUnauthorized: false },
-});
-
-const SCHEMA = `
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE TABLE IF NOT EXISTS events (
-  id text PRIMARY KEY,
-  slug text UNIQUE NOT NULL,
-  name text NOT NULL,
-  date date NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  retention_days int NOT NULL,
-  allow_browse_all boolean NOT NULL DEFAULT false
-);
-CREATE TABLE IF NOT EXISTS photos (
-  id text PRIMARY KEY,
-  event_id text NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-  width int NOT NULL,
-  height int NOT NULL,
-  face_count int NOT NULL,
-  full_url text NOT NULL,
-  thumb_url text NOT NULL,
-  uploaded_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS photos_event_idx ON photos(event_id, uploaded_at);
-CREATE TABLE IF NOT EXISTS faces (
-  photo_id text NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
-  event_id text NOT NULL,
-  embedding vector(128) NOT NULL
-);
-CREATE INDEX IF NOT EXISTS faces_event_idx ON faces(event_id);
-`;
-
-let ready: Promise<unknown> | null = null;
-async function q<T = Record<string, unknown>>(text: string, params: unknown[] = []) {
-  ready ??= pool.query(SCHEMA).catch((err) => {
-    ready = null;
-    throw err;
-  });
-  await ready;
-  return (await pool.query(text, params)).rows as T[];
-}
 
 const vec = (v: number[]) => `[${v.map(Number).join(",")}]`;
 
@@ -62,6 +14,7 @@ type EventRow = {
   created_at: Date;
   retention_days: number;
   allow_browse_all: boolean;
+  photographer_id: string | null;
 };
 
 function toMeta(r: EventRow): EventMeta {
@@ -73,6 +26,7 @@ function toMeta(r: EventRow): EventMeta {
     createdAt: r.created_at.toISOString(),
     retentionDays: r.retention_days,
     allowBrowseAll: r.allow_browse_all,
+    photographerId: r.photographer_id,
   };
 }
 
@@ -101,10 +55,11 @@ function toPhoto(r: PhotoRow): PhotoInfo {
 const PHOTO_COLS = "p.id, p.width, p.height, p.face_count, p.full_url, p.thumb_url, p.uploaded_at";
 
 export const postgresStore: Store = {
-  async listEvents() {
+  async listEvents(photographerId) {
     const rows = await q<EventRow & { photo_count: string }>(
       `SELECT e.*, (SELECT count(*) FROM photos p WHERE p.event_id = e.id) AS photo_count
-       FROM events e ORDER BY created_at DESC`,
+       FROM events e WHERE ($1::text IS NULL OR e.photographer_id = $1) ORDER BY created_at DESC`,
+      [photographerId ?? null],
     );
     return rows.map((r) => ({ ...toMeta(r), photoCount: Number(r.photo_count) }));
   },
@@ -130,14 +85,15 @@ export const postgresStore: Store = {
   async createEvent(input) {
     const { id, slug } = newEventIds();
     const [row] = await q<EventRow>(
-      `INSERT INTO events (id, slug, name, date, retention_days, allow_browse_all)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [id, slug, input.name, input.date, input.retentionDays, input.allowBrowseAll],
+      `INSERT INTO events (id, slug, name, date, retention_days, allow_browse_all, photographer_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [id, slug, input.name, input.date, input.retentionDays, input.allowBrowseAll, input.photographerId ?? null],
     );
     return toMeta(row);
   },
 
   async addPhoto(eventId, photo) {
+    await ensureDb();
     const client = await pool.connect();
     try {
       await client.query("BEGIN");

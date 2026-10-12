@@ -6,6 +6,7 @@ export type EventMeta = {
   createdAt: string;
   retentionDays: number;
   allowBrowseAll: boolean;
+  photographerId: string | null; // null = the studio's own event
 };
 
 export type EventSummary = EventMeta & { photoCount: number };
@@ -20,7 +21,9 @@ export type PhotoInfo = {
   thumbUrl: string;
 };
 
-export type NewEvent = Pick<EventMeta, "name" | "date" | "retentionDays" | "allowBrowseAll">;
+export type NewEvent = Pick<EventMeta, "name" | "date" | "retentionDays" | "allowBrowseAll"> & {
+  photographerId?: string | null;
+};
 
 export type NewPhoto = {
   id: string;
@@ -32,7 +35,8 @@ export type NewPhoto = {
 };
 
 export interface Store {
-  listEvents(): Promise<EventSummary[]>;
+  // All events, or only one photographer's.
+  listEvents(photographerId?: string): Promise<EventSummary[]>;
   getEvent(id: string): Promise<EventMeta | null>;
   getEventBySlug(slug: string): Promise<EventMeta | null>;
   listPhotos(eventId: string): Promise<PhotoInfo[]>;

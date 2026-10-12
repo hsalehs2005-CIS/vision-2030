@@ -103,14 +103,14 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-8">
       <header className="mb-6 text-center">
-        <p className="text-sm font-bold text-amber-700">صور الحفلة</p>
-        <h1 className="text-3xl font-extrabold">{name}</h1>
+        <p className="text-sm font-bold text-gold">صور الحفلة</p>
+        <h1 className="font-display text-3xl font-bold">{name}</h1>
       </header>
 
       {step === "consent" && (
         <section className="card mx-auto max-w-md space-y-4">
           <h2 className="text-xl font-bold">قبل أن نبدأ</h2>
-          <ul className="list-disc space-y-2 pr-5 text-stone-700">
+          <ul className="list-disc space-y-2 pr-5 text-muted">
             <li>سنستخدم صورة السيلفي فقط للبحث عن صورك في هذه الحفلة.</li>
             <li>السيلفي تتم معالجته على جوالك ولا يُرفع إلى الخادم ولا يُحفظ.</li>
             <li>صور الحفلة وبيانات الوجوه تُحذف تلقائياً بعد {retentionDays} يوم.</li>
@@ -131,8 +131,8 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
         <section className="card mx-auto max-w-md space-y-4 text-center">
           <div className="text-6xl">🤳</div>
           <h2 className="text-xl font-bold">التقط سيلفي</h2>
-          <p className="text-stone-600">واجه الكاميرا في مكان مضاء، بدون نظارة شمسية.</p>
-          {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          <p className="text-muted">واجه الكاميرا في مكان مضاء، بدون نظارة شمسية.</p>
+          {error && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
           <label className="btn w-full cursor-pointer">
             فتح الكاميرا
             <input
@@ -148,7 +148,7 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
 
       {step === "working" && (
         <section className="py-20 text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-stone-200 border-t-amber-600" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-line border-t-amber-600" />
           <p className="mt-4 font-bold">نبحث عن صورك...</p>
         </section>
       )}
@@ -170,18 +170,18 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
           </div>
           {fresh > 0 && (
             <button
-              className="w-full rounded-xl bg-amber-50 p-3 text-center font-bold text-amber-800"
+              className="w-full rounded-xl bg-gold/10 p-3 text-center font-bold text-gold"
               onClick={() => setFresh(0)}
             >
               📸 وصلتك {countLabel(fresh)} جديدة
             </button>
           )}
-          <p className="flex items-center gap-2 text-xs text-stone-500">
+          <p className="flex items-center gap-2 text-xs text-muted">
             <span className="h-2 w-2 animate-pulse rounded-full bg-green-600" />
             الصفحة تتحدث تلقائياً عند وصول صور جديدة من المصوّر
           </p>
           {!photos.length && (
-            <p className="text-stone-600">
+            <p className="text-muted">
               المصوّر يرفع الصور أثناء الحفلة، وستظهر صورك هنا تلقائياً. وإذا لم تظهر بعد فترة جرّب سيلفي أوضح.
             </p>
           )}
