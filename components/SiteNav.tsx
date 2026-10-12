@@ -20,8 +20,8 @@ export default function SiteNav() {
     fetch("/api/login")
       .then((r) => r.json())
       .then((d) => {
-        if (d.session) setAccount({ href: "/admin", label: "لوحتي" });
-        else if (d.client) setAccount({ href: "/account", label: "حسابي" });
+        if (d.client) setAccount({ href: "/account", label: "حسابي" });
+        else if (d.session) setAccount({ href: "/admin", label: "لوحة الاستوديو" });
         else setAccount({ href: "/login", label: "دخول / حساب جديد" });
       })
       .catch(() => {});

@@ -1,15 +1,15 @@
-// Staff login: the studio owner (ADMIN_PASSWORD) and approved photographers
-// (email + password). Clients who book have their own cookie, so a client
-// session can never reach the dashboard APIs. Both are signed cookies.
+// One sign-in for everyone. Accounts (clients and photographers) sign in with
+// phone or email; the studio owner signs in on the same form as "admin" with
+// ADMIN_PASSWORD. Each kind has its own signed cookie.
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { findClient, verifyClient } from "./clients";
-import { isApprovedPhotographer, photographerStatus, verifyPhotographer } from "./studio";
 
-const COOKIE = "studio_session";
-const CLIENT_COOKIE = "client_session";
+const OWNER_COOKIE = "studio_session";
+const ACCOUNT_COOKIE = "client_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 
+// Who may manage events: the owner (all events) or a photographer account (its own).
 export type Session = { role: "owner" } | { role: "photographer"; id: string; name: string };
 
 function ownerPassword() {
@@ -36,10 +36,6 @@ async function writeCookie(name: string, data: object) {
   });
 }
 
-function setSession(session: Session) {
-  return writeCookie(COOKIE, session);
-}
-
 async function readSigned<T>(name: string): Promise<T | null> {
   const value = (await cookies()).get(name)?.value;
   if (!value) return null;
@@ -56,81 +52,52 @@ async function readSigned<T>(name: string): Promise<T | null> {
   }
 }
 
-// The staff cookie's contents, before checking the photographer is still approved.
-function readCookie() {
-  return readSigned<Session & { exp: number }>(COOKIE);
+// The signed-in account (client or photographer), if any.
+export async function getClient() {
+  const data = await readSigned<{ id: string }>(ACCOUNT_COOKIE);
+  return data ? findClient(data.id) : null;
 }
 
 export async function getSession(): Promise<Session | null> {
-  const data = await readCookie();
-  if (data?.role === "owner") return { role: "owner" };
-  // A photographer counts as logged in only while the owner has them approved,
-  // so a pending request turns into access the moment it is approved.
-  if (data?.role === "photographer" && (await isApprovedPhotographer(data.id))) {
-    return { role: "photographer", id: data.id, name: data.name };
+  if ((await readSigned<{ role: string }>(OWNER_COOKIE))?.role === "owner") return { role: "owner" };
+  // Checked on every request, so a photographer the owner suspends loses access at once.
+  const account = await getClient();
+  if (account?.isPhotographer && !account.suspended) {
+    return { role: "photographer", id: account.id, name: account.name };
   }
   return null;
-}
-
-// Photographer who sent a request from this browser, whatever its status.
-export async function myPhotographerRequest() {
-  const data = await readCookie();
-  if (data?.role !== "photographer") return null;
-  const status = await photographerStatus(data.id);
-  return status ? { id: data.id, name: data.name, status } : null;
-}
-
-// Keeps the requesting photographer signed in on this device while they wait for approval.
-export async function rememberPhotographer(id: string, name: string) {
-  if ((await readCookie())?.role === "owner") return;
-  await setSession({ role: "photographer", id, name });
 }
 
 export async function isOwner() {
   return (await getSession())?.role === "owner";
 }
 
-export async function loginOwner(password: string) {
-  const expected = ownerPassword();
-  if (!expected || password !== expected) return false;
-  await setSession({ role: "owner" });
-  return true;
+export async function startClientSession(account: { id: string }) {
+  await writeCookie(ACCOUNT_COOKIE, { id: account.id });
 }
 
-export async function loginPhotographer(email: string, password: string) {
-  const p = await verifyPhotographer(email, password);
-  if (!p) return false;
-  await setSession({ role: "photographer", id: p.id, name: p.name });
-  return true;
+// identifier: phone, email, or "admin" for the studio owner.
+export async function login(identifier: string, password: string): Promise<"owner" | "account" | null> {
+  if (identifier.trim().toLowerCase() === "admin") {
+    const expected = ownerPassword();
+    if (!expected || password !== expected) return null;
+    await writeCookie(OWNER_COOKIE, { role: "owner" });
+    return "owner";
+  }
+  const account = await verifyClient(identifier, password);
+  if (!account) return null;
+  await startClientSession(account);
+  return "account";
 }
 
 export async function logout() {
-  (await cookies()).delete(COOKIE);
+  const jar = await cookies();
+  jar.delete(OWNER_COOKIE);
+  jar.delete(ACCOUNT_COOKIE);
 }
 
 // The event belongs to this session: the owner sees all, a photographer only theirs.
 export function canManageEvent(session: Session | null, event: { photographerId: string | null }) {
   if (!session) return false;
   return session.role === "owner" || event.photographerId === session.id;
-}
-
-// ---------- Clients ----------
-
-export async function getClient() {
-  const data = await readSigned<{ id: string }>(CLIENT_COOKIE);
-  return data ? findClient(data.id) : null;
-}
-
-export async function startClientSession(client: { id: string }) {
-  await writeCookie(CLIENT_COOKIE, { id: client.id });
-}
-
-export async function loginClient(phone: string, password: string) {
-  const client = await verifyClient(phone, password);
-  if (client) await startClientSession(client);
-  return !!client;
-}
-
-export async function logoutClient() {
-  (await cookies()).delete(CLIENT_COOKIE);
 }

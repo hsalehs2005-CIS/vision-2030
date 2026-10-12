@@ -35,8 +35,9 @@ CREATE TABLE IF NOT EXISTS events (
   retention_days int NOT NULL,
   allow_browse_all boolean NOT NULL DEFAULT false
 );
-ALTER TABLE events ADD COLUMN IF NOT EXISTS
-  photographer_id text REFERENCES photographers(id) ON DELETE CASCADE;
+-- The account (clients.id) of the photographer who owns the event; null for the studio's own.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS photographer_id text;
+ALTER TABLE events DROP CONSTRAINT IF EXISTS events_photographer_id_fkey;
 
 CREATE TABLE IF NOT EXISTS photos (
   id text PRIMARY KEY,
@@ -96,6 +97,16 @@ CREATE TABLE IF NOT EXISTS clients (
 );
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_id text REFERENCES clients(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS bookings_client_idx ON bookings(client_id);
+
+-- One account type for everyone: a photographer is an account with is_photographer.
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS is_photographer boolean NOT NULL DEFAULT false;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS suspended boolean NOT NULL DEFAULT false;
+-- Move accounts from the old separate photographers table (same ids keep their events).
+INSERT INTO clients (id, name, phone, email, password_hash, is_photographer, suspended, created_at)
+  SELECT id, name, phone, email, password_hash, true, status = 'rejected', created_at
+  FROM photographers WHERE password_hash IS NOT NULL
+  ON CONFLICT DO NOTHING;
+DELETE FROM photographers;
 `;
 
 // Starting packages; the owner edits them from the dashboard.

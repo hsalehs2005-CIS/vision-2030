@@ -36,7 +36,7 @@ export default function AccountBookings({ bookings }: { bookings: Booking[] }) {
       <button
         className="mt-8 text-sm text-muted hover:text-gold"
         onClick={async () => {
-          await fetch("/api/account", { method: "DELETE" });
+          await fetch("/api/login", { method: "DELETE" });
           window.location.assign("/");
         }}
       >
