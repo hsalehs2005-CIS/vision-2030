@@ -5,9 +5,9 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
 import LiveFolder from "@/components/LiveFolder";
 import { loadFaceApi } from "@/lib/face-client";
-import { uploadPhoto } from "@/lib/upload-client";
+import { type UploadMode, uploadPhoto } from "@/lib/upload-client";
 
-type Photo = { id: string; faceCount: number };
+type Photo = { id: string; faceCount: number; thumbUrl: string };
 type EventDetail = {
   id: string;
   slug: string;
@@ -15,6 +15,7 @@ type EventDetail = {
   date: string;
   retentionDays: number;
   photos: Photo[];
+  uploadMode: UploadMode;
 };
 
 export default function EventAdmin() {
@@ -49,7 +50,7 @@ export default function EventAdmin() {
     async function worker() {
       for (let file = queue.shift(); file; file = queue.shift()) {
         try {
-          await uploadPhoto(id, file);
+          await uploadPhoto(id, file, event!.uploadMode);
         } catch (err) {
           console.error("upload failed", file.name, err);
         }
@@ -76,7 +77,7 @@ export default function EventAdmin() {
 
       <div className="grid gap-6 md:grid-cols-[1fr_280px]">
         <div className="space-y-6">
-        <LiveFolder eventId={event.id} onUploaded={load} />
+        <LiveFolder eventId={event.id} mode={event.uploadMode} onUploaded={load} />
 
         <section className="card space-y-4">
           <h2 className="text-xl font-bold">رفع الصور يدوياً</h2>
@@ -123,7 +124,7 @@ export default function EventAdmin() {
         {event.photos.map((p) => (
           <div key={p.id} className="group relative">
             <img
-              src={`/api/photos/${event.id}/${p.id}?size=thumb`}
+              src={p.thumbUrl}
               alt=""
               loading="lazy"
               className="aspect-square w-full rounded-lg object-cover"

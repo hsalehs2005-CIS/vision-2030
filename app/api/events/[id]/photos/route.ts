@@ -1,26 +1,59 @@
 import { isAdmin } from "@/lib/auth";
-import { addPhoto, getEvent } from "@/lib/store";
+import { isBlobUrl, saveLocal } from "@/lib/files";
+import { newPhotoId, store } from "@/lib/store";
 
+function validFaces(faces: unknown): faces is number[][] {
+  return (
+    Array.isArray(faces) &&
+    faces.every((f) => Array.isArray(f) && f.length === 128 && f.every((x) => Number.isFinite(x)))
+  );
+}
+
+// Two modes: JSON with Vercel Blob URLs (browser already uploaded the images),
+// or multipart with the image bytes for local development.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isAdmin())) return Response.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  if (!(await getEvent(id))) return Response.json({ error: "not found" }, { status: 404 });
+  if (!(await store.getEvent(id))) return Response.json({ error: "not found" }, { status: 404 });
 
-  const form = await req.formData();
-  const full = form.get("full");
-  const thumb = form.get("thumb");
-  if (!(full instanceof Blob) || !(thumb instanceof Blob)) {
-    return Response.json({ error: "missing image" }, { status: 400 });
+  let photo;
+  if (req.headers.get("content-type")?.includes("application/json")) {
+    const body = await req.json();
+    if (!isBlobUrl(body.fullUrl) || !isBlobUrl(body.thumbUrl)) {
+      return Response.json({ error: "bad url" }, { status: 400 });
+    }
+    photo = { fullUrl: String(body.fullUrl), thumbUrl: String(body.thumbUrl), ...body };
+  } else {
+    const form = await req.formData();
+    const full = form.get("full");
+    const thumb = form.get("thumb");
+    if (!(full instanceof Blob) || !(thumb instanceof Blob)) {
+      return Response.json({ error: "missing image" }, { status: 400 });
+    }
+    const photoId = newPhotoId();
+    const urls = await saveLocal(
+      id,
+      photoId,
+      Buffer.from(await full.arrayBuffer()),
+      Buffer.from(await thumb.arrayBuffer()),
+    );
+    photo = {
+      ...urls,
+      id: photoId,
+      faces: JSON.parse(String(form.get("faces") ?? "[]")),
+      width: form.get("width"),
+      height: form.get("height"),
+    };
   }
-  const faces = JSON.parse(String(form.get("faces") ?? "[]")) as number[][];
-  if (!Array.isArray(faces) || faces.some((f) => !Array.isArray(f) || f.length !== 128)) {
-    return Response.json({ error: "bad faces" }, { status: 400 });
-  }
-  const photo = await addPhoto(
-    id,
-    Buffer.from(await full.arrayBuffer()),
-    Buffer.from(await thumb.arrayBuffer()),
-    { width: Number(form.get("width")) || 0, height: Number(form.get("height")) || 0, faces },
-  );
-  return Response.json({ id: photo.id, faceCount: faces.length });
+
+  if (!validFaces(photo.faces)) return Response.json({ error: "bad faces" }, { status: 400 });
+  await store.addPhoto(id, {
+    id: typeof photo.id === "string" && /^[\w-]{10,40}$/.test(photo.id) ? photo.id : newPhotoId(),
+    width: Number(photo.width) || 0,
+    height: Number(photo.height) || 0,
+    faces: photo.faces,
+    fullUrl: photo.fullUrl,
+    thumbUrl: photo.thumbUrl,
+  });
+  return Response.json({ ok: true, faceCount: photo.faces.length });
 }
