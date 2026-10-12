@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
-import { photoPath } from "@/lib/store";
+import { localPhotoPath } from "@/lib/files";
 
-// Photo ids are long random strings, so a guest can only open photos they were given.
+// Serves locally stored photos in development. In production photos live on Vercel Blob.
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ eventId: string; photoId: string }> },
@@ -10,7 +10,7 @@ export async function GET(
   const url = new URL(req.url);
   const size = url.searchParams.get("size") === "thumb" ? "thumb" : "full";
   try {
-    const data = await fs.readFile(photoPath(eventId, photoId, size));
+    const data = await fs.readFile(localPhotoPath(eventId, photoId, size));
     const headers: Record<string, string> = {
       "Content-Type": "image/jpeg",
       "Cache-Control": "private, max-age=86400",

@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { detectMainFace, fileToImage, loadFaceApi, resize } from "@/lib/face-client";
+import { downloadUrl } from "@/lib/upload-client";
 
-type Props = { slug: string; eventId: string; name: string; retentionDays: number; allowBrowseAll: boolean };
-type Photo = { id: string; width: number; height: number; uploadedAt: string };
+type Props = { slug: string; name: string; retentionDays: number; allowBrowseAll: boolean };
+type Photo = { id: string; width: number; height: number; uploadedAt: string; fullUrl: string; thumbUrl: string };
 type Step = "consent" | "selfie" | "working" | "results";
 
-export default function Guest({ slug, eventId, name, retentionDays, allowBrowseAll }: Props) {
+export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Props) {
   const storageKey = `face:${slug}`;
   const [step, setStep] = useState<Step>("consent");
   const [error, setError] = useState("");
@@ -98,7 +99,6 @@ export default function Guest({ slug, eventId, name, retentionDays, allowBrowseA
     setStep("consent");
   }
 
-  const src = (p: Photo, thumb = false) => `/api/photos/${eventId}/${p.id}${thumb ? "?size=thumb" : ""}`;
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-8">
@@ -188,7 +188,7 @@ export default function Guest({ slug, eventId, name, retentionDays, allowBrowseA
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {photos.map((p) => (
               <button key={p.id} onClick={() => setOpen(p)}>
-                <img src={src(p, true)} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-lg object-cover" />
+                <img src={p.thumbUrl} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-lg object-cover" />
               </button>
             ))}
           </div>
@@ -197,9 +197,9 @@ export default function Guest({ slug, eventId, name, retentionDays, allowBrowseA
 
       {open && (
         <div className="fixed inset-0 z-10 flex flex-col bg-black/90 p-4" onClick={() => setOpen(null)}>
-          <img src={src(open)} alt="" className="m-auto max-h-[80vh] max-w-full object-contain" />
+          <img src={open.fullUrl} alt="" className="m-auto max-h-[80vh] max-w-full object-contain" />
           <div className="flex justify-center gap-3 pt-4" onClick={(e) => e.stopPropagation()}>
-            <a href={`${src(open)}?download=1`} className="btn">تحميل</a>
+            <a href={downloadUrl(open.fullUrl)} className="btn">تحميل</a>
             <button className="btn-ghost text-white" onClick={() => setOpen(null)}>إغلاق</button>
           </div>
         </div>

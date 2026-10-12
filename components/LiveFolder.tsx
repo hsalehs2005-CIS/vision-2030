@@ -3,7 +3,7 @@
 // Wi-Fi/tethering software drops new shots) and uploads each new photo automatically.
 import { useEffect, useRef, useState } from "react";
 import { loadFaceApi } from "@/lib/face-client";
-import { uploadPhoto } from "@/lib/upload-client";
+import { type UploadMode, uploadPhoto } from "@/lib/upload-client";
 
 type DirHandle = {
   name: string;
@@ -15,7 +15,15 @@ const POLL_MS = 3000;
 // Skip files modified in the last moment: the camera may still be writing them.
 const SETTLE_MS = 1500;
 
-export default function LiveFolder({ eventId, onUploaded }: { eventId: string; onUploaded: () => void }) {
+export default function LiveFolder({
+  eventId,
+  mode,
+  onUploaded,
+}: {
+  eventId: string;
+  mode: UploadMode;
+  onUploaded: () => void;
+}) {
   const [supported, setSupported] = useState(true);
   const [dir, setDir] = useState<DirHandle | null>(null);
   const [status, setStatus] = useState("");
@@ -43,7 +51,7 @@ export default function LiveFolder({ eventId, onUploaded }: { eventId: string; o
           if (seen.current.has(key) || Date.now() - file.lastModified < SETTLE_MS) continue;
           setStatus(`جاري رفع ${entry.name}`);
           try {
-            await uploadPhoto(eventId, file);
+            await uploadPhoto(eventId, file, mode);
             seen.current.add(key);
             setCount((c) => c + 1);
             onUploaded();
@@ -64,7 +72,7 @@ export default function LiveFolder({ eventId, onUploaded }: { eventId: string; o
       stopped = true;
       clearInterval(timer);
     };
-  }, [dir, eventId, onUploaded]);
+  }, [dir, eventId, mode, onUploaded]);
 
   async function start(skipExisting: boolean) {
     const picker = (window as unknown as { showDirectoryPicker(): Promise<DirHandle> }).showDirectoryPicker;

@@ -1,5 +1,6 @@
 import { isAdmin } from "@/lib/auth";
-import { deletePhoto } from "@/lib/store";
+import { deleteFiles } from "@/lib/files";
+import { store } from "@/lib/store";
 
 export async function DELETE(
   _: Request,
@@ -7,6 +8,6 @@ export async function DELETE(
 ) {
   if (!(await isAdmin())) return Response.json({ error: "unauthorized" }, { status: 401 });
   const { id, photoId } = await params;
-  await deletePhoto(id, photoId);
+  await deleteFiles(await store.deletePhoto(id, photoId));
   return Response.json({ ok: true });
 }
