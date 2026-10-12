@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { detectMainFace, fileToImage, loadFaceApi, resize } from "@/lib/face-client";
 
 type Props = { slug: string; eventId: string; name: string; retentionDays: number; allowBrowseAll: boolean };
-type Photo = { id: string; width: number; height: number };
+type Photo = { id: string; width: number; height: number; uploadedAt: string };
 type Step = "consent" | "selfie" | "working" | "results";
 
 export default function Guest({ slug, eventId, name, retentionDays, allowBrowseAll }: Props) {
@@ -13,11 +13,40 @@ export default function Guest({ slug, eventId, name, retentionDays, allowBrowseA
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [open, setOpen] = useState<Photo | null>(null);
 
-  async function match(body: object) {
+  const [fresh, setFresh] = useState(0);
+  const query = useRef<object | null>(null);
+
+  async function fetchMatches(body: object): Promise<Photo[]> {
     const res = await fetch(`/api/e/${slug}/match`, { method: "POST", body: JSON.stringify(body) });
-    setPhotos((await res.json()).photos ?? []);
+    const list: Photo[] = (await res.json()).photos ?? [];
+    return list.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  }
+
+  async function match(body: object) {
+    query.current = body;
+    setPhotos(await fetchMatches(body));
+    setFresh(0);
     setStep("results");
   }
+
+  // Live: the photographer uploads during the event, so check for new photos.
+  useEffect(() => {
+    if (step !== "results") return;
+    const timer = setInterval(async () => {
+      if (!query.current || document.hidden) return;
+      try {
+        const next = await fetchMatches(query.current);
+        setPhotos((prev) => {
+          const known = new Set(prev.map((p) => p.id));
+          const added = next.filter((p) => !known.has(p.id)).length;
+          if (added) setFresh((n) => n + added);
+          return next;
+        });
+      } catch {}
+    }, 8000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   // Returning guest: the descriptor (numbers only, no image) stays on this phone.
   useEffect(() => {
@@ -139,9 +168,21 @@ export default function Guest({ slug, eventId, name, retentionDays, allowBrowseA
               </button>
             </div>
           </div>
+          {fresh > 0 && (
+            <button
+              className="w-full rounded-xl bg-amber-50 p-3 text-center font-bold text-amber-800"
+              onClick={() => setFresh(0)}
+            >
+              📸 وصلتك {countLabel(fresh)} جديدة
+            </button>
+          )}
+          <p className="flex items-center gap-2 text-xs text-stone-500">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-green-600" />
+            الصفحة تتحدث تلقائياً عند وصول صور جديدة من المصوّر
+          </p>
           {!photos.length && (
             <p className="text-stone-600">
-              المصوّر يرفع الصور أثناء الحفلة، اضغط "تحديث" بعد قليل. وإذا استمرت المشكلة جرّب سيلفي أوضح.
+              المصوّر يرفع الصور أثناء الحفلة، وستظهر صورك هنا تلقائياً. وإذا لم تظهر بعد فترة جرّب سيلفي أوضح.
             </p>
           )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

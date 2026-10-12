@@ -16,7 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // The descriptor is used for this request only and is not stored.
   return Response.json({
-    photos: photos.map((p) => ({ id: p.id, width: p.width, height: p.height })),
+    photos: photos.map((p) => ({ id: p.id, width: p.width, height: p.height, uploadedAt: p.uploadedAt })),
     total: event.photos.length,
   });
 }

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useState } from "react";
-import { canvasToJpeg, detectAllFaces, fileToImage, loadFaceApi, resize } from "@/lib/face-client";
+import LiveFolder from "@/components/LiveFolder";
+import { loadFaceApi } from "@/lib/face-client";
+import { uploadPhoto } from "@/lib/upload-client";
 
 type Photo = { id: string; faceCount: number };
 type EventDetail = {
@@ -47,15 +49,7 @@ export default function EventAdmin() {
     async function worker() {
       for (let file = queue.shift(); file; file = queue.shift()) {
         try {
-          const img = await fileToImage(file);
-          const faces = await detectAllFaces(resize(img, 1600));
-          const form = new FormData();
-          form.set("full", await canvasToJpeg(resize(img, 3000), 0.9));
-          form.set("thumb", await canvasToJpeg(resize(img, 800), 0.8));
-          form.set("faces", JSON.stringify(faces));
-          form.set("width", String(img.naturalWidth));
-          form.set("height", String(img.naturalHeight));
-          await fetch(`/api/events/${id}/photos`, { method: "POST", body: form });
+          await uploadPhoto(id, file);
         } catch (err) {
           console.error("upload failed", file.name, err);
         }
@@ -81,8 +75,11 @@ export default function EventAdmin() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-[1fr_280px]">
+        <div className="space-y-6">
+        <LiveFolder eventId={event.id} onUploaded={load} />
+
         <section className="card space-y-4">
-          <h2 className="text-xl font-bold">رفع الصور</h2>
+          <h2 className="text-xl font-bold">رفع الصور يدوياً</h2>
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-300 p-10 text-center hover:border-amber-600">
             <span className="text-lg font-bold">اختر الصور أو اسحبها هنا</span>
             <span className="text-sm text-stone-500">يتم اكتشاف الوجوه تلقائياً قبل الرفع</span>
@@ -106,8 +103,9 @@ export default function EventAdmin() {
             </div>
           )}
         </section>
+        </div>
 
-        <section className="card space-y-3 text-center">
+        <section className="card h-fit space-y-3 text-center">
           <h2 className="text-xl font-bold">باركود الضيوف</h2>
           {qr && <img src={qr} alt="باركود الحفلة" className="mx-auto w-full max-w-[220px]" />}
           <a href={guestUrl} target="_blank" className="block break-all text-sm text-amber-700 underline" dir="ltr">
