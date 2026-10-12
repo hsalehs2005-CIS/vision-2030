@@ -219,15 +219,17 @@ export async function requestPhotographer(input: {
   studio: string;
   city: string;
   message: string;
+  password: string;
 }) {
-  const existing = await q<{ id: string }>("SELECT id FROM photographers WHERE email = $1", [input.email]);
-  if (existing.length) return { duplicate: true };
+  const existing = await q<{ id: string }>("SELECT id FROM photographers WHERE lower(email) = lower($1)", [input.email]);
+  if (existing.length) return null;
+  const id = nanoid(10);
   await q(
-    `INSERT INTO photographers (id, name, phone, email, studio, city, message)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [nanoid(10), input.name, input.phone, input.email, input.studio, input.city, input.message],
+    `INSERT INTO photographers (id, name, phone, email, studio, city, message, password_hash)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [id, input.name, input.phone, input.email, input.studio, input.city, input.message, await hashPassword(input.password)],
   );
-  return { duplicate: false };
+  return id;
 }
 
 async function hashPassword(pw: string) {
@@ -242,18 +244,19 @@ async function checkPassword(pw: string, stored: string) {
   return expected.length === actual.length && timingSafeEqual(actual, expected);
 }
 
-// Approving (or resetting) issues a fresh password, shown once to the owner to send on.
 export async function approvePhotographer(id: string) {
+  await q("UPDATE photographers SET status = 'approved' WHERE id = $1", [id]);
+}
+
+// For a photographer who forgot their password: a fresh one, shown once to the owner to send on.
+export async function resetPhotographerPassword(id: string) {
   const password = randomBytes(6).toString("base64url");
-  await q("UPDATE photographers SET status = 'approved', password_hash = $2 WHERE id = $1", [
-    id,
-    await hashPassword(password),
-  ]);
+  await q("UPDATE photographers SET password_hash = $2 WHERE id = $1", [id, await hashPassword(password)]);
   return password;
 }
 
 export async function rejectPhotographer(id: string) {
-  await q("UPDATE photographers SET status = 'rejected', password_hash = NULL WHERE id = $1", [id]);
+  await q("UPDATE photographers SET status = 'rejected' WHERE id = $1", [id]);
 }
 
 export async function deletePhotographer(id: string) {
@@ -269,7 +272,11 @@ export async function verifyPhotographer(email: string, password: string) {
   return (await checkPassword(password, row.password_hash)) ? { id: row.id, name: row.name } : null;
 }
 
+export async function photographerStatus(id: string) {
+  const [row] = await q<{ status: Photographer["status"] }>("SELECT status FROM photographers WHERE id = $1", [id]);
+  return row?.status ?? null;
+}
+
 export async function isApprovedPhotographer(id: string) {
-  const [row] = await q<{ status: string }>("SELECT status FROM photographers WHERE id = $1", [id]);
-  return row?.status === "approved";
+  return (await photographerStatus(id)) === "approved";
 }

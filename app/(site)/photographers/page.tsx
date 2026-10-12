@@ -1,4 +1,7 @@
 import PhotographerRequestForm from "@/components/PhotographerRequestForm";
+import { myPhotographerRequest } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 const STEPS = [
   { icon: "📷", title: "صوّر كالعادة", text: "الصور تنتقل من مجلد الكاميرا إلى الموقع تلقائياً أثناء الحفلة." },
@@ -6,7 +9,8 @@ const STEPS = [
   { icon: "◉", title: "سيلفي واحد", text: "الضيف يلتقط سيلفي فتظهر له صوره هو فقط، ويحفظها في ألبوم جواله." },
 ];
 
-export default function PhotographersPage() {
+export default async function PhotographersPage() {
+  const mine = await myPhotographerRequest();
   return (
     <section className="section min-h-screen">
       <span className="section-label">للمصورين</span>
@@ -15,7 +19,7 @@ export default function PhotographersPage() {
       </h1>
       <div className="divider" />
       <p className="section-sub">
-        أنت مصوّر وتريد أن يحصل ضيوف حفلاتك على صورهم فوراً؟ أرسل طلبك، وبعد الموافقة تحصل على حساب خاص تنشئ منه حفلاتك.
+        أنت مصوّر وتريد أن يحصل ضيوف حفلاتك على صورهم فوراً؟ أرسل طلبك، وبمجرد موافقة الاستوديو يظهر لك زر الدخول للوحتك تنشئ منها حفلاتك.
       </p>
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {STEPS.map((s) => (
@@ -27,8 +31,7 @@ export default function PhotographersPage() {
         ))}
       </div>
       <div className="mx-auto mt-16 max-w-2xl">
-        <h2 className="mb-6 font-display text-2xl font-bold">طلب الانضمام</h2>
-        <PhotographerRequestForm />
+        <PhotographerRequestForm initial={mine ? { name: mine.name, status: mine.status } : null} />
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { isOwner } from "@/lib/auth";
+import { isOwner, myPhotographerRequest, rememberPhotographer } from "@/lib/auth";
 import { listPhotographers, requestPhotographer } from "@/lib/studio";
 
 export async function GET() {
@@ -17,11 +17,17 @@ export async function POST(req: Request) {
     studio: field("studio", 100),
     city: field("city", 60),
     message: field("message", 1000),
+    password: String(body.password ?? ""),
   };
   if (!input.name || !input.phone || !/^\S+@\S+\.\S+$/.test(input.email)) {
     return Response.json({ error: "الاسم والجوال والبريد الإلكتروني مطلوبة" }, { status: 400 });
   }
-  const { duplicate } = await requestPhotographer(input);
-  if (duplicate) return Response.json({ error: "يوجد طلب مسجل بهذا البريد" }, { status: 409 });
-  return Response.json({ ok: true });
+  if (input.password.length < 6) {
+    return Response.json({ error: "كلمة السر 6 أحرف على الأقل" }, { status: 400 });
+  }
+  const id = await requestPhotographer(input);
+  if (!id) return Response.json({ error: "يوجد طلب مسجل بهذا البريد، سجّل دخولك من صفحة الدخول" }, { status: 409 });
+  // Stay signed in here: once approved, the dashboard button just works.
+  await rememberPhotographer(id, input.name);
+  return Response.json({ ok: true, status: (await myPhotographerRequest())?.status ?? "pending" });
 }

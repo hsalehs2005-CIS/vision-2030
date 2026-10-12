@@ -22,6 +22,7 @@ type Tab = (typeof OWNER_TABS)[number]["key"];
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("bookings");
+  const [pending, setPending] = useState<Partial<Record<Tab, number>>>({});
 
   async function load() {
     const res = await fetch("/api/login");
@@ -32,6 +33,18 @@ export default function AdminPage() {
     const saved = sessionStorage.getItem("admin-tab") as Tab | null;
     if (saved) setTab(saved);
   }, []);
+
+  // New booking and photographer requests show as a number on their tab.
+  useEffect(() => {
+    if (session?.role !== "owner") return;
+    const count = (url: string) =>
+      fetch(url)
+        .then((r) => r.json())
+        .then((list: { status: string }[]) => list.filter((x) => x.status === "pending").length);
+    Promise.all([count("/api/bookings"), count("/api/photographers")]).then(([bookings, photographers]) =>
+      setPending({ bookings, photographers }),
+    );
+  }, [session, tab]);
 
   if (session === undefined) return null;
   if (!session) return <Login onDone={load} />;
@@ -69,6 +82,9 @@ export default function AdminPage() {
                 }`}
               >
                 {t.label}
+                {!!pending[t.key] && (
+                  <span className="mr-1.5 rounded-full bg-gold px-1.5 text-[11px] font-bold text-ink">{pending[t.key]}</span>
+                )}
               </button>
             ))}
           </nav>

@@ -2,7 +2,7 @@
 // photographers (email + password). The session is a signed cookie.
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { isApprovedPhotographer, verifyPhotographer } from "./studio";
+import { isApprovedPhotographer, photographerStatus, verifyPhotographer } from "./studio";
 
 const COOKIE = "studio_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -33,7 +33,8 @@ async function setSession(session: Session) {
   });
 }
 
-export async function getSession(): Promise<Session | null> {
+// The signed cookie's contents, before checking the photographer is still approved.
+async function readCookie(): Promise<(Session & { exp: number }) | null> {
   const value = (await cookies()).get(COOKIE)?.value;
   if (!value) return null;
   const [payload, sig] = value.split(".");
@@ -43,14 +44,35 @@ export async function getSession(): Promise<Session | null> {
   }
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString());
-    if (data.exp < Date.now()) return null;
-    if (data.role === "owner") return { role: "owner" };
-    // A photographer removed or rejected by the owner loses access immediately.
-    if (data.role === "photographer" && (await isApprovedPhotographer(data.id))) {
-      return { role: "photographer", id: data.id, name: data.name };
-    }
-  } catch {}
+    return data.exp < Date.now() ? null : data;
+  } catch {
+    return null;
+  }
+}
+
+export async function getSession(): Promise<Session | null> {
+  const data = await readCookie();
+  if (data?.role === "owner") return { role: "owner" };
+  // A photographer counts as logged in only while the owner has them approved,
+  // so a pending request turns into access the moment it is approved.
+  if (data?.role === "photographer" && (await isApprovedPhotographer(data.id))) {
+    return { role: "photographer", id: data.id, name: data.name };
+  }
   return null;
+}
+
+// Photographer who sent a request from this browser, whatever its status.
+export async function myPhotographerRequest() {
+  const data = await readCookie();
+  if (data?.role !== "photographer") return null;
+  const status = await photographerStatus(data.id);
+  return status ? { id: data.id, name: data.name, status } : null;
+}
+
+// Keeps the requesting photographer signed in on this device while they wait for approval.
+export async function rememberPhotographer(id: string, name: string) {
+  if ((await readCookie())?.role === "owner") return;
+  await setSession({ role: "photographer", id, name });
 }
 
 export async function isOwner() {

@@ -14,7 +14,7 @@ export default function PhotographersTab() {
   }, []);
   if (!list) return null;
 
-  async function act(id: string, action: "approve" | "reject") {
+  async function act(id: string, action: "approve" | "reject" | "reset") {
     const res = await fetch(`/api/photographers/${id}`, { method: "PATCH", body: JSON.stringify({ action }) });
     const data = await res.json();
     if (data.password) setIssued({ id, password: data.password });
@@ -24,7 +24,7 @@ export default function PhotographersTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        المصورون يطلبون استخدام ميزة الباركود من صفحة &quot;للمصورين&quot;. عند الموافقة تظهر كلمة سر مرة واحدة، أرسلها للمصوّر مع بريده.
+        المصورون يطلبون استخدام ميزة الباركود من صفحة &quot;للمصورين&quot;. بمجرد ما توافق يظهر للمصوّر زر الدخول لحفلاته مباشرة.
       </p>
       {!list.length && <p className="text-muted">لا توجد طلبات بعد.</p>}
       <ul className="space-y-3">
@@ -53,7 +53,7 @@ export default function PhotographersTab() {
             {p.message && <p className="whitespace-pre-wrap border-r-2 border-line pr-3 text-sm text-muted">{p.message}</p>}
             {issued?.id === p.id && (
               <div className="border border-gold/40 bg-gold/10 p-3 text-sm">
-                بيانات الدخول (تظهر مرة واحدة فقط):
+                كلمة السر الجديدة (تظهر مرة واحدة فقط، أرسلها للمصوّر):
                 <div className="mt-1 font-mono" dir="ltr">
                   {p.email} / <b className="text-gold">{issued.password}</b>
                 </div>
@@ -61,7 +61,7 @@ export default function PhotographersTab() {
             )}
             <div className="flex flex-wrap gap-2 border-t border-line pt-3">
               {p.status !== "approved" && <button className="btn btn-sm" onClick={() => act(p.id, "approve")}>موافقة</button>}
-              {p.status === "approved" && <button className="btn-ghost btn-sm" onClick={() => act(p.id, "approve")}>كلمة سر جديدة</button>}
+              {p.status === "approved" && <button className="btn-ghost btn-sm" onClick={() => act(p.id, "reset")}>نسي كلمة السر</button>}
               {p.status !== "rejected" && <button className="btn-ghost btn-sm" onClick={() => act(p.id, "reject")}>{p.status === "approved" ? "إيقاف" : "رفض"}</button>}
               <button
                 className="btn-sm mr-auto text-xs text-muted hover:text-red-400"

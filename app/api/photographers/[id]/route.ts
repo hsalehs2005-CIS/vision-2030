@@ -1,14 +1,18 @@
 import { isOwner } from "@/lib/auth";
 import { deleteEventFiles } from "@/lib/files";
 import { store } from "@/lib/store";
-import { approvePhotographer, deletePhotographer, rejectPhotographer } from "@/lib/studio";
+import { approvePhotographer, deletePhotographer, rejectPhotographer, resetPhotographerPassword } from "@/lib/studio";
 
-// action "approve" (also resets the password) or "reject".
+// action "approve", "reject", or "reset" (new password, returned once).
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isOwner())) return Response.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
   const { action } = await req.json();
-  if (action === "approve") return Response.json({ password: await approvePhotographer(id) });
+  if (action === "approve") {
+    await approvePhotographer(id);
+    return Response.json({ ok: true });
+  }
+  if (action === "reset") return Response.json({ password: await resetPhotographerPassword(id) });
   if (action === "reject") {
     await rejectPhotographer(id);
     return Response.json({ ok: true });
