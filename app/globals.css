@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #faf8f5;
+  --fg: #1c1917;
+  --muted: #78716c;
+  --card: #ffffff;
+  --accent: #b45309;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Tajawal", system-ui, sans-serif;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-white transition disabled:opacity-50;
+  background: var(--accent);
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-stone-300 px-5 py-3 font-bold transition hover:bg-stone-100;
+}
+.card {
+  @apply rounded-2xl border border-stone-200 p-5 shadow-sm;
+  background: var(--card);
+}
+.input {
+  @apply w-full rounded-xl border border-stone-300 bg-white px-4 py-3 outline-none focus:border-amber-600;
+}
