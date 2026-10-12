@@ -20,10 +20,10 @@ export const STATUS_LABEL: Record<Booking["status"], string> = {
 };
 
 export const STATUS_CLASS: Record<Booking["status"], string> = {
-  pending: "border-amber-400/40 text-amber-300",
-  confirmed: "border-gold/60 text-gold",
-  done: "border-emerald-400/40 text-emerald-300",
-  cancelled: "border-line text-muted line-through",
+  pending: "border-amber-300 bg-amber-50 text-amber-800",
+  confirmed: "border-amber-600 bg-amber-100 text-amber-900",
+  done: "border-emerald-300 bg-emerald-50 text-emerald-800",
+  cancelled: "border-stone-200 text-stone-500 line-through",
 };
 
 export async function fetchBookings(): Promise<Booking[]> {

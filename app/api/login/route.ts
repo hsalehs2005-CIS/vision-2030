@@ -1,18 +1,20 @@
-import { getClient, getSession, loginOwner, loginPhotographer, logout } from "@/lib/auth";
+import { getClient, getSession, login, logout } from "@/lib/auth";
 
 export async function GET() {
-  const client = await getClient();
-  return Response.json({ session: await getSession(), client: client && { name: client.name } });
+  const [session, client] = await Promise.all([getSession(), getClient()]);
+  return Response.json({
+    session,
+    client: client && { name: client.name, isPhotographer: client.isPhotographer, suspended: client.suspended },
+  });
 }
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
-  const ok = email
-    ? await loginPhotographer(String(email).trim(), String(password ?? ""))
-    : await loginOwner(String(password ?? ""));
-  return ok
-    ? Response.json({ ok: true, session: await getSession() })
-    : Response.json({ error: "بيانات الدخول غير صحيحة" }, { status: 401 });
+  const { identifier, password } = await req.json();
+  const who = await login(String(identifier ?? ""), String(password ?? ""));
+  if (!who) return Response.json({ error: "بيانات الدخول غير صحيحة" }, { status: 401 });
+  if (who === "owner") return Response.json({ ok: true, home: "/admin" });
+  const session = await getSession();
+  return Response.json({ ok: true, home: session ? "/admin" : "/account" });
 }
 
 export async function DELETE() {

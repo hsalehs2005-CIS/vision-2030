@@ -26,7 +26,10 @@ export default function AdminPage() {
 
   async function load() {
     const res = await fetch("/api/login");
-    setSession((await res.json()).session);
+    const { session } = await res.json();
+    // One sign-in page for everyone; it brings people back here.
+    if (!session) window.location.replace("/login?next=/admin");
+    else setSession(session);
   }
   useEffect(() => {
     load();
@@ -34,20 +37,18 @@ export default function AdminPage() {
     if (saved) setTab(saved);
   }, []);
 
-  // New booking and photographer requests show as a number on their tab.
+  // New booking requests show as a number on their tab.
   useEffect(() => {
     if (session?.role !== "owner") return;
     const count = (url: string) =>
       fetch(url)
         .then((r) => r.json())
         .then((list: { status: string }[]) => list.filter((x) => x.status === "pending").length);
-    Promise.all([count("/api/bookings"), count("/api/photographers")]).then(([bookings, photographers]) =>
-      setPending({ bookings, photographers }),
-    );
+    count("/api/bookings").then((bookings) => setPending({ bookings }));
   }, [session, tab]);
 
   if (session === undefined) return null;
-  if (!session) return <Login onDone={load} />;
+  if (!session) return null;
 
   const owner = session.role === "owner";
   return (
@@ -58,15 +59,22 @@ export default function AdminPage() {
             {site.name}
             <span className="mr-2 text-xs font-normal text-gold">{owner ? "لوحة الاستوديو" : `مرحباً ${session.name}`}</span>
           </Link>
-          <button
-            className="text-sm text-muted hover:text-gold"
-            onClick={async () => {
-              await fetch("/api/login", { method: "DELETE" });
-              setSession(null);
-            }}
-          >
-            خروج
-          </button>
+          <div className="flex items-center gap-4 text-sm">
+            {!owner && (
+              <Link href="/account" className="text-muted hover:text-gold">
+                حسابي
+              </Link>
+            )}
+            <button
+              className="text-muted hover:text-gold"
+              onClick={async () => {
+                await fetch("/api/login", { method: "DELETE" });
+                window.location.assign("/");
+              }}
+            >
+              خروج
+            </button>
+          </div>
         </div>
         {owner && (
           <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4">
@@ -104,65 +112,5 @@ export default function AdminPage() {
         )}
       </main>
     </div>
-  );
-}
-
-function Login({ onDone }: { onDone: () => void }) {
-  const [mode, setModeState] = useState<"owner" | "photographer">("photographer");
-  useEffect(() => {
-    try {
-      if (localStorage.getItem("login-mode") === "owner") setModeState("owner");
-    } catch {}
-  }, []);
-  const setMode = (m: "owner" | "photographer") => {
-    setModeState(m);
-    try {
-      localStorage.setItem("login-mode", m);
-    } catch {}
-  };
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <Link href="/" className="mb-8 text-center font-display text-3xl font-bold">
-        {site.name}
-      </Link>
-      <form
-        className="card space-y-4"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError("");
-          const body = mode === "owner" ? { password } : { email, password };
-          const res = await fetch("/api/login", { method: "POST", body: JSON.stringify(body) });
-          if (res.ok) onDone();
-          else setError((await res.json()).error);
-        }}
-      >
-        <div className="grid grid-cols-2 gap-1 border border-line p-1">
-          {(["photographer", "owner"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`py-2 text-sm ${mode === m ? "bg-gold font-bold text-ink" : "text-muted"}`}
-            >
-              {m === "owner" ? "صاحب الاستوديو" : "مصوّر"}
-            </button>
-          ))}
-        </div>
-        {mode === "photographer" && (
-          <input className="input" type="email" dir="ltr" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        )}
-        <input className="input" type="password" placeholder="كلمة السر" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button className="btn w-full">دخول</button>
-        {mode === "photographer" && (
-          <p className="text-center text-xs text-muted">
-            ليس لديك حساب؟ <Link href="/photographers" className="text-gold">أنشئ حساب مصوّر</Link>
-          </p>
-        )}
-      </form>
-    </main>
   );
 }

@@ -18,7 +18,7 @@ export default async function PackagesPage() {
         {packages.map((p) => (
           <PackageCard key={p.id} pkg={p} />
         ))}
-        <div className="pkg-card items-center justify-center gap-4 text-center" style={{ border: "1px dashed rgba(201,168,76,0.3)", background: "transparent", minHeight: 300 }}>
+        <div className="pkg-card items-center justify-center gap-4 text-center" style={{ borderStyle: "dashed", minHeight: 300 }}>
           <span className="text-5xl">🎨</span>
           <div className="font-display text-2xl font-bold text-muted">باقة مخصصة</div>
           <p className="text-sm leading-7 text-muted">تحتاج شيئاً مختلفاً؟ أرسل لنا طلبك وسنصمم لك باقة تناسبك بالضبط.</p>

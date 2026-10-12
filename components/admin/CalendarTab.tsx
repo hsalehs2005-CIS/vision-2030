@@ -56,7 +56,7 @@ export default function CalendarTab() {
                 {list.length > 0 && (
                   <span className="flex gap-0.5">
                     {list.slice(0, 3).map((b) => (
-                      <span key={b.id} className={`h-1.5 w-1.5 rounded-full ${b.status === "pending" ? "bg-amber-300" : "bg-gold"}`} />
+                      <span key={b.id} className={`h-1.5 w-1.5 rounded-full ${b.status === "pending" ? "bg-amber-500" : "bg-gold"}`} />
                     ))}
                   </span>
                 )}
@@ -66,7 +66,7 @@ export default function CalendarTab() {
         </div>
         <div className="mt-4 flex gap-4 text-xs text-muted">
           <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gold" /> مؤكد</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-300" /> بانتظار التأكيد</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> بانتظار التأكيد</span>
         </div>
       </div>
       <div className="space-y-3">

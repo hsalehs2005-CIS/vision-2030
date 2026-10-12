@@ -146,7 +146,7 @@ export default function EventAdmin() {
       </section>
 
       <button
-        className="text-sm text-red-400 underline"
+        className="text-sm text-red-600 underline"
         onClick={async () => {
           if (!confirm("حذف الحفلة وكل صورها وبيانات الوجوه نهائياً؟")) return;
           await fetch(`/api/events/${event.id}`, { method: "DELETE" });

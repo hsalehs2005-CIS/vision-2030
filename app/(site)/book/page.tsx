@@ -1,5 +1,5 @@
 import BookingForm from "@/components/BookingForm";
-import ClientAuth from "@/components/ClientAuth";
+import AuthForm from "@/components/AuthForm";
 import { getClient } from "@/lib/auth";
 import { site } from "@/lib/site";
 import { bookedDates, listPackages } from "@/lib/studio";
@@ -34,7 +34,7 @@ export default async function BookPage({ searchParams }: { searchParams: Promise
         {!client ? (
           <div>
             <p className="mb-4 text-sm text-muted">سجّل دخولك أو أنشئ حساباً لإكمال الحجز ومتابعته.</p>
-            <ClientAuth />
+            <AuthForm stay initialMode="signup" />
           </div>
         ) : (
         <BookingForm

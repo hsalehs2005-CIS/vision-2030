@@ -1,5 +1,6 @@
-import PhotographerRequestForm from "@/components/PhotographerRequestForm";
-import { myPhotographerRequest } from "@/lib/auth";
+import Link from "next/link";
+import BecomePhotographer from "@/components/BecomePhotographer";
+import { getClient } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,18 +11,15 @@ const STEPS = [
 ];
 
 export default async function PhotographersPage() {
-  const mine = await myPhotographerRequest();
+  const client = await getClient();
   return (
     <section className="section min-h-screen">
       <span className="section-label">للمصورين</span>
       <h1 className="section-title">
         صور الضيوف<span className="accent"> بالباركود</span>
       </h1>
-      <div className="divider" />
-      <p className="section-sub">
-        أنت مصوّر وتريد أن يحصل ضيوف حفلاتك على صورهم فوراً؟ أرسل طلبك، وبمجرد موافقة الاستوديو يظهر لك زر الدخول للوحتك تنشئ منها حفلاتك.
-      </p>
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
+      <p className="section-sub">أنشئ حساب مصوّر وابدأ مباشرة: أنشئ حفلتك، ارفع الصور، واطبع الباركود.</p>
+      <div className="mt-12 grid gap-6 md:grid-cols-3">
         {STEPS.map((s) => (
           <div key={s.title} className="srv-card">
             <div className="srv-icon">{s.icon}</div>
@@ -30,8 +28,17 @@ export default async function PhotographersPage() {
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-16 max-w-2xl">
-        <PhotographerRequestForm initial={mine ? { name: mine.name, status: mine.status } : null} />
+      <div className="mt-12 flex flex-wrap justify-center gap-3">
+        {!client ? (
+          <>
+            <Link href="/login?mode=signup&type=photographer" className="btn">أنشئ حساب مصوّر</Link>
+            <Link href="/login" className="btn-ghost">عندي حساب</Link>
+          </>
+        ) : client.isPhotographer ? (
+          <Link href="/admin" className="btn">ادخل حفلاتي</Link>
+        ) : (
+          <BecomePhotographer label="فعّل ميزة الباركود لحسابي" />
+        )}
       </div>
     </section>
   );

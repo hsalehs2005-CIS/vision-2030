@@ -39,7 +39,7 @@ export default function AboutPage() {
                   <div className="aperture-dot" />
                 </div>
               </div>
-              <p className="text-xs tracking-[3px] text-muted">{site.name}</p>
+              <p className="text-xs tracking-widest text-muted">{site.name}</p>
             </div>
             <span className="absolute right-6 top-6 text-xs tracking-widest text-gold/40">f/1.4</span>
             <span className="absolute bottom-6 left-6 text-xs tracking-widest text-gold/40">1/500s</span>
@@ -48,7 +48,7 @@ export default function AboutPage() {
         </div>
       </section>
       {site.testimonials.length > 0 && (
-        <section className="section bg-ink-2">
+        <section className="section">
           <div className="text-center">
             <span className="section-label">آراء العملاء</span>
             <h2 className="section-title">

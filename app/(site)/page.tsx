@@ -52,7 +52,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section bg-ink-2">
+      <section className="section">
         <div className="mb-4 text-center">
           <span className="section-label">خدماتنا</span>
           <h2 className="section-title">
@@ -70,7 +70,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section text-center" style={{ background: "linear-gradient(135deg,#0a0a0a,#0d0c09)" }}>
+      <section className="section text-center">
         <span className="section-label">لماذا نحن</span>
         <h2 className="section-title">
           الجودة ليست خياراً<span className="accent"> — هي معيارنا</span>

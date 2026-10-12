@@ -74,7 +74,7 @@ export default function BookingsTab() {
               {b.status === "confirmed" && <button className="btn-ghost btn-sm" onClick={() => setStatus(b.id, "done")}>تم التصوير</button>}
               {b.status !== "cancelled" && <button className="btn-ghost btn-sm" onClick={() => setStatus(b.id, "cancelled")}>إلغاء</button>}
               <button
-                className="btn-sm mr-auto text-xs text-muted hover:text-red-400"
+                className="btn-sm mr-auto text-xs text-muted hover:text-red-600"
                 onClick={async () => {
                   if (!confirm(`حذف حجز ${b.name} نهائياً؟`)) return;
                   await fetch(`/api/bookings/${b.id}`, { method: "DELETE" });

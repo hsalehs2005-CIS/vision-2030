@@ -1,5 +1,5 @@
-// Studio business data: packages, client bookings, and photographers who
-// asked to use the QR photo feature.
+// Studio business data: packages and client bookings (plus password hashing
+// shared with accounts).
 import { randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { nanoid } from "nanoid";
@@ -202,53 +202,7 @@ export async function deleteBooking(id: string) {
   await q("DELETE FROM bookings WHERE id = $1", [id]);
 }
 
-// ---------- Photographers ----------
-
-export type Photographer = {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  studio: string;
-  city: string;
-  message: string;
-  status: "pending" | "approved" | "rejected";
-  createdAt: string;
-  eventCount: number;
-};
-
-export async function listPhotographers() {
-  const rows = await q<Omit<Photographer, "createdAt" | "eventCount"> & { created_at: Date; event_count: string }>(
-    `SELECT p.id, p.name, p.phone, p.email, p.studio, p.city, p.message, p.status, p.created_at,
-       (SELECT count(*) FROM events e WHERE e.photographer_id = p.id) AS event_count
-     FROM photographers p ORDER BY p.created_at DESC`,
-  );
-  return rows.map(({ created_at, event_count, ...p }) => ({
-    ...p,
-    createdAt: created_at.toISOString(),
-    eventCount: Number(event_count),
-  }));
-}
-
-export async function requestPhotographer(input: {
-  name: string;
-  phone: string;
-  email: string;
-  studio: string;
-  city: string;
-  message: string;
-  password: string;
-}) {
-  const existing = await q<{ id: string }>("SELECT id FROM photographers WHERE lower(email) = lower($1)", [input.email]);
-  if (existing.length) return null;
-  const id = nanoid(10);
-  await q(
-    `INSERT INTO photographers (id, name, phone, email, studio, city, message, password_hash)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [id, input.name, input.phone, input.email, input.studio, input.city, input.message, await hashPassword(input.password)],
-  );
-  return id;
-}
+// ---------- Passwords ----------
 
 export async function hashPassword(pw: string) {
   const salt = randomBytes(16).toString("hex");
@@ -260,41 +214,4 @@ export async function checkPassword(pw: string, stored: string) {
   const actual = await scrypt(pw, salt, 32);
   const expected = Buffer.from(hash, "hex");
   return expected.length === actual.length && timingSafeEqual(actual, expected);
-}
-
-export async function approvePhotographer(id: string) {
-  await q("UPDATE photographers SET status = 'approved' WHERE id = $1", [id]);
-}
-
-// For a photographer who forgot their password: a fresh one, shown once to the owner to send on.
-export async function resetPhotographerPassword(id: string) {
-  const password = randomBytes(6).toString("base64url");
-  await q("UPDATE photographers SET password_hash = $2 WHERE id = $1", [id, await hashPassword(password)]);
-  return password;
-}
-
-export async function rejectPhotographer(id: string) {
-  await q("UPDATE photographers SET status = 'rejected' WHERE id = $1", [id]);
-}
-
-export async function deletePhotographer(id: string) {
-  await q("DELETE FROM photographers WHERE id = $1", [id]);
-}
-
-export async function verifyPhotographer(email: string, password: string) {
-  const [row] = await q<{ id: string; name: string; password_hash: string | null; status: string }>(
-    "SELECT id, name, password_hash, status FROM photographers WHERE lower(email) = lower($1)",
-    [email],
-  );
-  if (!row || row.status !== "approved" || !row.password_hash) return null;
-  return (await checkPassword(password, row.password_hash)) ? { id: row.id, name: row.name } : null;
-}
-
-export async function photographerStatus(id: string) {
-  const [row] = await q<{ status: Photographer["status"] }>("SELECT status FROM photographers WHERE id = $1", [id]);
-  return row?.status ?? null;
-}
-
-export async function isApprovedPhotographer(id: string) {
-  return (await photographerStatus(id)) === "approved";
 }
