@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { detectMainFace, fileToImage, loadFaceApi, resize } from "@/lib/face-client";
-import { downloadUrl } from "@/lib/upload-client";
+import SaveToPhotos from "@/components/SaveToPhotos";
 
 type Props = { slug: string; name: string; retentionDays: number; allowBrowseAll: boolean };
 type Photo = { id: string; width: number; height: number; uploadedAt: string; fullUrl: string; thumbUrl: string };
@@ -185,6 +185,7 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
               المصوّر يرفع الصور أثناء الحفلة، وستظهر صورك هنا تلقائياً. وإذا لم تظهر بعد فترة جرّب سيلفي أوضح.
             </p>
           )}
+          {photos.length > 1 && <SaveToPhotos photos={photos} className="btn w-full" />}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {photos.map((p) => (
               <button key={p.id} onClick={() => setOpen(p)}>
@@ -199,7 +200,7 @@ export default function Guest({ slug, name, retentionDays, allowBrowseAll }: Pro
         <div className="fixed inset-0 z-10 flex flex-col bg-black/90 p-4" onClick={() => setOpen(null)}>
           <img src={open.fullUrl} alt="" className="m-auto max-h-[80vh] max-w-full object-contain" />
           <div className="flex justify-center gap-3 pt-4" onClick={(e) => e.stopPropagation()}>
-            <a href={downloadUrl(open.fullUrl)} className="btn">تحميل</a>
+            <SaveToPhotos photos={[open]} autoPrepare />
             <button className="btn-ghost text-white" onClick={() => setOpen(null)}>إغلاق</button>
           </div>
         </div>
